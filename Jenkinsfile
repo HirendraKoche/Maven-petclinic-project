@@ -46,7 +46,7 @@ podTemplate(
   node(POD_LABEL){
     container('maven'){
       stage 'Download repo'  
-      git credentialsId: 'git-user', url: 'https://github.com/HirendraKoche/Maven-petclinic-project.git'
+      checkout scm
       stage 'Build code'
       sh 'mvn clean package'
     }
