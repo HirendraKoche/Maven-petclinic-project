@@ -1,3 +1,7 @@
+def githash = ""
+def dockerRepo = "hirendrakoche/petclinic"
+def dockerRepoURL = "https://hub.docker.com/v2/repositories/${dockerRepo}/tags"
+
 podTemplate(
   showRawYaml: false,
   yaml: """
@@ -44,23 +48,32 @@ podTemplate(
 ){
   //pipeline code
   node(POD_LABEL){
+    stage("Git Pull") {
+      git credentialsId: 'git-user', url: 'https://github.com/HirendraKoche/Maven-petclinic-project.git' 
+      githash = sh(returnStdout: true, script: "git rev-parse --short=6 HEAD").trim()
+    }
+    
     container('maven'){
-      stage 'Download repo'  
-      checkout scm
-      stage 'Build code'
-      sh 'mvn clean package'
+      stage("Maven Build"){
+        sh 'mvn clean package'
+      }
     }
 
     container('docker'){
-      stage 'Create Image'
-      def githash = sh(returnStdout: true, script: 'git rev-parse --short=6 HEAD').trim()
-      def imageTag = "hirendrakoche/petclinic:${gihash}"
-      echo ${imageTag}
-      def isImageExist = sh(returnStdout: true, script: 'docker image inspect ${imageTag} --format="true" 2> /dev/null').trim()
-      if (isImageExist == "true"){
-        println ("Docker Image exist: %s", ${imageTag})
-      }else {
-        println "Docker Image Not exist. "
+      stage("Create Image") {
+        def imageTag = "${dockerRepo}:${githash}"
+        withDockerRegistry(credentialsId: 'docker-hub-user') {
+          sh '''
+            #!/bin/bash
+            apk add curl
+            if [ $(curl --silent -f -lSL ''' + dockerRepoURL + '/' + githash + ''' 2> /dev/null) ]; then
+              echo "Image already exist at dockerhub: "''' + imageTag + '''
+            else
+              docker image build -t ''' + imageTag + ''' .
+              docker push ''' + imageTag + '''
+            fi
+          '''
+        }
       }
     }
   }
