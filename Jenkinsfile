@@ -49,7 +49,7 @@ podTemplate(
   //pipeline code
   node(POD_LABEL){
     stage("Git Pull") {
-      git credentialsId: 'git-user', url: 'https://github.com/HirendraKoche/Maven-petclinic-project.git' 
+      checkout scm
       githash = sh(returnStdout: true, script: "git rev-parse --short=6 HEAD").trim()
     }
     
