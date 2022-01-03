@@ -63,16 +63,16 @@ podTemplate(
       stage("Create Image") {
         def imageTag = "${dockerRepo}:${githash}"
         withDockerRegistry(credentialsId: 'docker-hub-user') {
-          sh '''
+          sh """
             #!/bin/bash
             apk add curl
-            if [ $(curl --silent -f -lSL ''' + dockerRepoURL + '/' + githash + ''' 2> /dev/null) ]; then
-              echo "Image already exist at dockerhub: "''' + imageTag + '''
+            if [ \$(curl --silent -f -lSL ${dockerRepoURL}/${githash} 2> /dev/null) ]; then
+              echo "Image already exist at dockerhub: " ${imageTag}
             else
-              docker image build -t ''' + imageTag + ''' .
-              docker push ''' + imageTag + '''
+              docker image build -t ${imageTag} .
+              docker push ${imageTag}
             fi
-          '''
+          """
         }
       }
     }
